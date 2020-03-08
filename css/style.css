@@ -3,10 +3,34 @@ body {
     background-color: black;
 }
 
+#main-container {
+    padding: 5px;
+    display: flex;
+}
+
 .pane {
     margin: 5px;
     padding: 5px;
     border: 1px solid white;
+}
+
+.button {
+    width: 8rem;
+    height: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid white;
+    cursor: pointer;
+}
+
+.button:not(:last-child) {
+    margin-bottom: 5px;
+}
+
+.button:hover {
+    color: black;
+    background-color: white;
 }
 
 #display {

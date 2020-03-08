@@ -1,7 +1,7 @@
 module Display exposing (Display, init, view)
 
 import Dict exposing (Dict)
-import Html exposing (Html, div, text)
+import Html exposing (Html, div)
 import Html.Attributes exposing (class, classList, id)
 
 
