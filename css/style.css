@@ -1,4 +1,26 @@
 body {
-  color: lime;
-  background-color: black;
+    color: white;
+    background-color: black;
+}
+
+.pane {
+    margin: 5px;
+    padding: 5px;
+    border: 1px solid white;
+}
+
+#display {
+    width: 640px;
+    height: 320px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#display .dot {
+    width: 10px;
+    height: 10px;
+}
+
+#display .dot-on {
+    background-color: white; 
 }

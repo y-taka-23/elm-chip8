@@ -1,3 +1,4 @@
+require('../css/html5doctor.css')
 require('../css/style.css')
 import { Elm } from '../src/Main.elm'
 
