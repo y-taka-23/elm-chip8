@@ -2,10 +2,15 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events as Browser
+import Bytes exposing (Bytes)
 import Control exposing (Control)
 import Display exposing (Display)
+import File exposing (File)
+import File.Select as Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
+import Memory exposing (Memory)
+import Task
 
 
 main : Program () Model Msg
@@ -19,7 +24,10 @@ main =
 
 
 type Msg
-    = Run
+    = SelectRom
+    | ExtractRom File
+    | LoadRom Bytes
+    | Run
     | Pause
     | Step
 
@@ -27,6 +35,7 @@ type Msg
 type alias Model =
     { control : Control
     , display : Display
+    , memory : Memory
     }
 
 
@@ -34,6 +43,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { control = Control.init
       , display = Display.init
+      , memory = Memory.init
       }
     , Cmd.none
     )
@@ -42,6 +52,21 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SelectRom ->
+            ( model, Select.file [] ExtractRom )
+
+        ExtractRom file ->
+            ( model, Task.perform LoadRom (File.toBytes file) )
+
+        LoadRom rom ->
+            case Memory.loadRom rom of
+                -- TODO: handle errors here
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just mem ->
+                    ( { model | memory = mem }, Cmd.none )
+
         Run ->
             ( { model | control = Control.run model.control }, Cmd.none )
 
@@ -64,6 +89,6 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ id "main-container" ]
-        [ Control.view Run Pause Step model.control
+        [ Control.view SelectRom Run Pause Step model.control
         , Display.view model.display
         ]
