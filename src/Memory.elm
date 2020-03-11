@@ -1,4 +1,15 @@
-module Memory exposing (Address, Memory, Word, init, loadRom, next, read)
+module Memory exposing
+    ( Address
+    , Memory
+    , Nibble(..)
+    , Word
+    , fromNibble
+    , init
+    , loadRom
+    , next
+    , read
+    , toNibble
+    )
 
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode exposing (Decoder, Step(..))
@@ -9,22 +20,36 @@ type Memory
     = Memory (Dict Int Word)
 
 
-type Address
-    = Address Int
-
-
-next : Address -> Address
-next (Address addr) =
-    Address (addr + 1)
+type Nibble
+    = Nibble Int
 
 
 type Word
     = Word Int
 
 
+type Address
+    = Address Int
+
+
 init : ( Memory, Address )
 init =
     ( Memory Dict.empty, Address 0x0200 )
+
+
+fromNibble : Nibble -> Nibble -> Nibble -> Address
+fromNibble (Nibble x1) (Nibble x2) (Nibble x3) =
+    Address <| (16 * 16 * x1) + (16 * x2) + x3
+
+
+toNibble : Word -> ( Nibble, Nibble )
+toNibble (Word x) =
+    ( Nibble (x // 16), Nibble (modBy 16 x) )
+
+
+next : Address -> Address
+next (Address addr) =
+    Address (addr + 1)
 
 
 read : Address -> Memory -> Word
