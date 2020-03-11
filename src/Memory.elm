@@ -1,4 +1,4 @@
-module Memory exposing (Memory, init, loadRom)
+module Memory exposing (Address, Memory, Word, init, loadRom, next, read)
 
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode exposing (Decoder, Step(..))
@@ -9,13 +9,27 @@ type Memory
     = Memory (Dict Int Word)
 
 
+type Address
+    = Address Int
+
+
+next : Address -> Address
+next (Address addr) =
+    Address (addr + 1)
+
+
 type Word
     = Word Int
 
 
-init : Memory
+init : ( Memory, Address )
 init =
-    Memory Dict.empty
+    ( Memory Dict.empty, Address 0x0200 )
+
+
+read : Address -> Memory -> Word
+read _ _ =
+    Word 0
 
 
 loadRom : Bytes -> Maybe Memory
@@ -25,7 +39,9 @@ loadRom rom =
             Decode.decode (list (Bytes.width rom) word) rom
 
         offset =
-            List.indexedMap (\i w -> ( i + 0x0200, w ))
+            case init of
+                ( _, Address addr ) ->
+                    List.indexedMap (\i w -> ( i + addr, w ))
     in
     Maybe.map (Memory << Dict.fromList << offset) words
 

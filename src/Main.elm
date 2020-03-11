@@ -4,6 +4,7 @@ import Browser
 import Browser.Events as Browser
 import Bytes exposing (Bytes)
 import Control exposing (Control)
+import Cpu exposing (Cpu)
 import Display exposing (Display)
 import File exposing (File)
 import File.Select as Select
@@ -36,6 +37,7 @@ type alias Model =
     { control : Control
     , display : Display
     , memory : Memory
+    , cpu : Cpu
     }
 
 
@@ -43,7 +45,8 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { control = Control.init
       , display = Display.init
-      , memory = Memory.init
+      , memory = Tuple.first Memory.init
+      , cpu = Cpu.init
       }
     , Cmd.none
     )
@@ -74,7 +77,14 @@ update msg model =
             ( { model | control = Control.pause model.control }, Cmd.none )
 
         Step ->
-            ( model, Cmd.none )
+            let
+                ( newCpu, newMem ) =
+                    Debug.log "Running" <|
+                        Cpu.execute model.cpu model.memory <|
+                            Cpu.decode <|
+                                Cpu.fetch model.cpu model.memory
+            in
+            ( { model | memory = newMem, cpu = newCpu }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
