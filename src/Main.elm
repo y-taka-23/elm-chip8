@@ -79,10 +79,9 @@ update msg model =
         Step ->
             let
                 ( newCpu, newMem ) =
-                    Debug.log "Running" <|
-                        Cpu.execute model.cpu model.memory <|
-                            Cpu.decode <|
-                                Cpu.fetch model.cpu model.memory
+                    Cpu.execute model.cpu model.memory <|
+                        Cpu.decode <|
+                            Cpu.fetch model.cpu model.memory
             in
             ( { model | memory = newMem, cpu = newCpu }, Cmd.none )
 

@@ -34,7 +34,33 @@ type Address
 
 init : ( Memory, Address )
 init =
-    ( Memory Dict.empty, Address 0x0200 )
+    ( Memory <|
+        Dict.fromList <|
+            List.indexedMap Tuple.pair <|
+                List.concat font
+    , Address 0x0200
+    )
+
+
+font : List (List Word)
+font =
+    [ [ Word 0xF0, Word 0x90, Word 0x90, Word 0x90, Word 0xF0 ]
+    , [ Word 0x20, Word 0x60, Word 0x20, Word 0x20, Word 0x70 ]
+    , [ Word 0xF0, Word 0x10, Word 0xF0, Word 0x80, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x10, Word 0xF0, Word 0x10, Word 0xF0 ]
+    , [ Word 0x90, Word 0x90, Word 0xF0, Word 0x10, Word 0x10 ]
+    , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x10, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x90, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x10, Word 0x20, Word 0x40, Word 0x40 ]
+    , [ Word 0xF0, Word 0x90, Word 0xF0, Word 0x90, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x90, Word 0xF0, Word 0x10, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x90, Word 0xF0, Word 0x90, Word 0x90 ]
+    , [ Word 0xE0, Word 0x90, Word 0xE0, Word 0x90, Word 0xE0 ]
+    , [ Word 0xF0, Word 0x80, Word 0x80, Word 0x80, Word 0xF0 ]
+    , [ Word 0xE0, Word 0x90, Word 0x90, Word 0x90, Word 0xE0 ]
+    , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x80, Word 0xF0 ]
+    , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x80, Word 0x80 ]
+    ]
 
 
 fromNibble : Nibble -> Nibble -> Nibble -> Address
@@ -59,16 +85,22 @@ read _ _ =
 
 loadRom : Bytes -> Maybe Memory
 loadRom rom =
-    let
-        words =
-            Decode.decode (list (Bytes.width rom) word) rom
+    case init of
+        ( Memory mem, Address addr ) ->
+            let
+                words =
+                    Decode.decode (list (Bytes.width rom) word) rom
 
-        offset =
-            case init of
-                ( _, Address addr ) ->
+                offset =
                     List.indexedMap (\i w -> ( i + addr, w ))
-    in
-    Maybe.map (Memory << Dict.fromList << offset) words
+            in
+            Maybe.map
+                (Memory
+                    << (\d -> Dict.union d mem)
+                    << Dict.fromList
+                    << offset
+                )
+                words
 
 
 word : Decoder Word
