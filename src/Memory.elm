@@ -9,11 +9,15 @@ module Memory exposing
     , next
     , read
     , toNibble
+    , undefined
+    , viewAddress
+    , viewWord
     )
 
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode exposing (Decoder, Step(..))
 import Dict exposing (Dict)
+import Html exposing (Html, text)
 
 
 type Memory
@@ -26,6 +30,11 @@ type Nibble
 
 type Word
     = Word Int
+
+
+undefined : Word
+undefined =
+    Word 0
 
 
 type Address
@@ -80,7 +89,7 @@ next (Address addr) =
 
 read : Address -> Memory -> Word
 read _ _ =
-    Word 0
+    undefined
 
 
 loadRom : Bytes -> Maybe Memory
@@ -124,3 +133,13 @@ listStep decoder ( n, xs ) =
 
     else
         Decode.map (\x -> Loop ( n - 1, x :: xs )) decoder
+
+
+viewWord : Word -> Html msg
+viewWord (Word x) =
+    text <| String.fromInt x
+
+
+viewAddress : Address -> Html msg
+viewAddress (Address addr) =
+    text <| String.fromInt addr

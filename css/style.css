@@ -48,3 +48,29 @@ body {
 #display .dot-on {
     background-color: white; 
 }
+
+#cpu .raw {
+    display: flex;
+    flex-direction: row;
+}
+
+#cpu .raw:not(:last-child) {
+    margin-bottom: 5px;
+}
+
+#cpu .raw .cell {
+    border: 1px solid white;
+    width: 3rem;
+    padding: 5px;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+}
+
+#cpu .raw .cell:not(:last-child) {
+    margin-right: 5px;
+}
+
+#cpu .raw .cell.stretch {
+    width: 100%;
+}

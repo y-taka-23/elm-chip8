@@ -100,4 +100,5 @@ view model =
     div [ id "main-container" ]
         [ Control.view SelectRom Run Pause Step model.control
         , Display.view model.display
+        , Cpu.view model.cpu
         ]
