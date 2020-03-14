@@ -331,7 +331,7 @@ skip (Cpu cpu) =
 
 jump : Address -> Cpu -> Cpu
 jump addr (Cpu cpu) =
-    Cpu { cpu | pc = addr }
+    Cpu { cpu | step = cpu.step + 1, pc = addr }
 
 
 view : Cpu -> Html msg
