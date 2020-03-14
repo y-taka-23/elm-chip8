@@ -4,13 +4,13 @@ import Browser
 import Browser.Events as Browser
 import Bytes exposing (Bytes)
 import Control exposing (Control)
-import Cpu exposing (Cpu)
+import Cpu exposing (Cpu, Register)
 import Display exposing (Display)
 import File exposing (File)
 import File.Select as Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Memory exposing (Memory)
+import Memory exposing (Memory, Word)
 import Task
 
 
@@ -31,6 +31,7 @@ type Msg
     | Run
     | Pause
     | Step
+    | StepRand Register Word Word
 
 
 type alias Model =
@@ -78,12 +79,27 @@ update msg model =
 
         Step ->
             let
-                ( newCpu, newMem ) =
-                    Cpu.execute model.cpu model.memory <|
+                ( ( newCpu, newMem, newDisp ), cmd ) =
+                    Cpu.execute StepRand
+                        ( model.cpu, model.memory, model.display )
+                    <|
                         Cpu.decode <|
                             Cpu.fetch model.cpu model.memory
             in
-            ( { model | memory = newMem, cpu = newCpu }, Cmd.none )
+            ( { model
+                | memory = newMem
+                , cpu = newCpu
+                , display = newDisp
+              }
+            , cmd
+            )
+
+        StepRand reg mask rand ->
+            let
+                newCpu =
+                    Cpu.executeRand reg mask rand model.cpu
+            in
+            ( { model | cpu = newCpu }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg

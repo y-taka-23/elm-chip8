@@ -3,21 +3,29 @@ module Memory exposing
     , Memory
     , Nibble(..)
     , Word
+    , add
+    , and
+    , fromCollision
     , fromNibble
     , init
     , loadRom
     , next
+    , random
     , read
+    , readSprite
+    , toCoordinate
     , toNibble
     , undefined
     , viewAddress
     , viewWord
     )
 
+import Bitwise
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode exposing (Decoder, Step(..))
 import Dict exposing (Dict)
 import Html exposing (Html, text)
+import Random exposing (Generator)
 
 
 type Memory
@@ -34,7 +42,51 @@ type Word
 
 undefined : Word
 undefined =
-    Word 0
+    Word 0x00
+
+
+toNibble : Word -> ( Nibble, Nibble )
+toNibble (Word x) =
+    ( Nibble (x // 16), Nibble (modBy 16 x) )
+
+
+toCoordinate : Word -> Word -> ( Int, Int )
+toCoordinate (Word x) (Word y) =
+    ( x, y )
+
+
+toSprite : List Word -> List (List Bool)
+toSprite ws =
+    let
+        toLine (Word x) =
+            List.map ((/=) 0 << Bitwise.and x)
+                [ 128, 64, 32, 16, 8, 4, 2, 1 ]
+    in
+    List.map toLine ws
+
+
+fromCollision : Bool -> Word
+fromCollision coll =
+    if coll then
+        Word 0x01
+
+    else
+        Word 0x00
+
+
+random : Generator Word
+random =
+    Random.map Word <| Random.int 0x00 0xFF
+
+
+and : Word -> Word -> Word
+and (Word x1) (Word x2) =
+    Word <| Bitwise.and x1 x2
+
+
+add : Word -> Word -> Word
+add (Word x1) (Word x2) =
+    Word <| modBy 0xFF <| x1 + x2
 
 
 type Address
@@ -77,19 +129,26 @@ fromNibble (Nibble x1) (Nibble x2) (Nibble x3) =
     Address <| (16 * 16 * x1) + (16 * x2) + x3
 
 
-toNibble : Word -> ( Nibble, Nibble )
-toNibble (Word x) =
-    ( Nibble (x // 16), Nibble (modBy 16 x) )
-
-
 next : Address -> Address
 next (Address addr) =
     Address (addr + 1)
 
 
 read : Address -> Memory -> Word
-read _ _ =
-    undefined
+read (Address addr) (Memory mem) =
+    Maybe.withDefault undefined <| Dict.get addr mem
+
+
+readSprite : Nibble -> Address -> Memory -> List (List Bool)
+readSprite size origin =
+    toSprite << readChunk size origin
+
+
+readChunk : Nibble -> Address -> Memory -> List Word
+readChunk (Nibble size) (Address origin) mem =
+    List.map (\a -> read a mem) <|
+        List.map Address <|
+            List.range origin (origin + size - 1)
 
 
 loadRom : Bytes -> Maybe Memory
