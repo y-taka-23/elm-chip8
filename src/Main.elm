@@ -10,7 +10,8 @@ import File exposing (File)
 import File.Select as Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
-import Memory exposing (Memory, Word)
+import Memory exposing (Memory)
+import Memory.Word exposing (Word)
 import Task
 
 

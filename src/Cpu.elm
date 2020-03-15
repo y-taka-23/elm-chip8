@@ -13,7 +13,8 @@ import Dict exposing (Dict)
 import Display exposing (Display)
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class, id)
-import Memory exposing (Address, Memory, Nibble(..), Word)
+import Memory exposing (Address, Memory)
+import Memory.Word as Word exposing (Nibble(..), Word)
 import Random
 
 
@@ -38,7 +39,7 @@ type Registers
 
 read : Register -> Registers -> Word
 read (Register x) (Registers regs) =
-    Maybe.withDefault Memory.undefined <| Dict.get x regs
+    Maybe.withDefault Word.undefined <| Dict.get x regs
 
 
 write : Register -> Word -> Registers -> Registers
@@ -90,8 +91,8 @@ init =
         , pc = Tuple.second Memory.init
         , index = Tuple.second Memory.init
         , registers = Registers Dict.empty
-        , delayTimer = Memory.undefined
-        , soundTimer = Memory.undefined
+        , delayTimer = Word.undefined
+        , soundTimer = Word.undefined
         }
 
 
@@ -109,7 +110,7 @@ fetch (Cpu cpu) mem =
 
 decode : ( Word, Word ) -> Instruction
 decode ( w1, w2 ) =
-    case ( Memory.toNibble w1, Memory.toNibble w2 ) of
+    case ( Word.toNibbles w1, Word.toNibbles w2 ) of
         ( ( Nibble 0x00, Nibble 0x00 ), ( Nibble 0x0E, Nibble 0x00 ) ) ->
             Clear
 
@@ -241,7 +242,7 @@ execute onRand ( cpu, mem, disp ) inst =
 
         Rand reg mask ->
             ( ( cpu, mem, disp )
-            , Random.generate (onRand reg mask) Memory.random
+            , Random.generate (onRand reg mask) Word.random
             )
 
         Draw regX regY size ->
@@ -257,7 +258,7 @@ execute onRand ( cpu, mem, disp ) inst =
 
 executeRand : Register -> Word -> Word -> Cpu -> Cpu
 executeRand reg mask rand cpu =
-    next <| setRegister reg (Memory.and mask rand) cpu
+    next <| setRegister reg (Word.and mask rand) cpu
 
 
 setIndex : Address -> Cpu -> Cpu
@@ -284,14 +285,14 @@ addRegister : Register -> Word -> Cpu -> Cpu
 addRegister reg w cpu =
     let
         sum =
-            Memory.add w <| getRegister reg cpu
+            Word.add w <| getRegister reg cpu
     in
     setRegister reg sum cpu
 
 
-setCollision : Bool -> Cpu -> Cpu
-setCollision coll cpu =
-    setRegister (Register 0x0F) (Memory.fromCollision coll) cpu
+setFlag : Bool -> Cpu -> Cpu
+setFlag flag cpu =
+    setRegister (Register 0x0F) (Word.fromFlag flag) cpu
 
 
 drawSprite :
@@ -309,9 +310,9 @@ drawSprite regX regY size ( cpu, mem, disp ) =
             ( getRegister regX cpu, getRegister regY cpu )
 
         ( newDisp, coll ) =
-            Display.draw (Memory.toCoordinate x y) sprite disp
+            Display.draw (Word.toCoordinate x y) sprite disp
     in
-    ( setCollision coll cpu, newDisp )
+    ( setFlag coll cpu, newDisp )
 
 
 nextPc : Address -> Address
@@ -342,8 +343,8 @@ view (Cpu cpu) =
         , div [ class "raw" ]
             [ stretchCell "PC" <| Memory.viewAddress cpu.pc
             , stretchCell "I" <| Memory.viewAddress cpu.index
-            , stretchCell "DT" <| Memory.viewWord cpu.delayTimer
-            , stretchCell "ST" <| Memory.viewWord cpu.soundTimer
+            , stretchCell "DT" <| Word.view cpu.delayTimer
+            , stretchCell "ST" <| Word.view cpu.soundTimer
             ]
         , div [ class "raw" ]
             [ unitCell "V0" (Register 0x00) cpu.registers
@@ -378,7 +379,7 @@ unitCell : String -> Register -> Registers -> Html msg
 unitCell label reg regs =
     let
         val =
-            Memory.viewWord <| read reg regs
+            Word.view <| read reg regs
     in
     div [ class "cell" ]
         [ div [] [ text label ], div [] [ val ] ]
