@@ -35,8 +35,8 @@ isRunning ctrl =
             True
 
 
-view : msg -> msg -> msg -> msg -> Control -> Html msg
-view onSelect onRun onPause onStep ctrl =
+view : msg -> msg -> msg -> msg -> msg -> Control -> Html msg
+view onSelect onRun onPause onStep onReset ctrl =
     div [ class "pane" ]
         [ div [ class "button", onClick onSelect ] [ text "Load ROM" ]
         , case ctrl of
@@ -46,4 +46,5 @@ view onSelect onRun onPause onStep ctrl =
             Running ->
                 div [ class "button", onClick onPause ] [ text "Pause" ]
         , div [ class "button", onClick onStep ] [ text "Step" ]
+        , div [ class "button", onClick onReset ] [ text "Reset" ]
         ]

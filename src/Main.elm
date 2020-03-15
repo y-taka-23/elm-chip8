@@ -32,6 +32,7 @@ type Msg
     | Pause
     | Step
     | StepRand Register Word Word
+    | Reset
 
 
 type alias Model =
@@ -39,6 +40,7 @@ type alias Model =
     , display : Display
     , memory : Memory
     , cpu : Cpu
+    , rom : Maybe File
     }
 
 
@@ -48,6 +50,7 @@ init _ =
       , display = Display.init
       , memory = Tuple.first Memory.init
       , cpu = Cpu.init
+      , rom = Nothing
       }
     , Cmd.none
     )
@@ -60,7 +63,9 @@ update msg model =
             ( model, Select.file [] ExtractRom )
 
         ExtractRom file ->
-            ( model, Task.perform LoadRom (File.toBytes file) )
+            ( { model | rom = Just file }
+            , Task.perform LoadRom (File.toBytes file)
+            )
 
         LoadRom rom ->
             case Memory.loadRom rom of
@@ -101,6 +106,18 @@ update msg model =
             in
             ( { model | cpu = newCpu }, Cmd.none )
 
+        Reset ->
+            let
+                initModel =
+                    Tuple.first <| init ()
+
+                cmd =
+                    Maybe.withDefault Cmd.none <|
+                        Maybe.map (Task.perform LoadRom << File.toBytes)
+                            model.rom
+            in
+            ( { initModel | rom = model.rom }, cmd )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -114,7 +131,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ id "main-container" ]
-        [ Control.view SelectRom Run Pause Step model.control
+        [ Control.view SelectRom Run Pause Step Reset model.control
         , Display.view model.display
         , Cpu.view model.cpu
         ]
