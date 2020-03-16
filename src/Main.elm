@@ -132,7 +132,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ id "main-container" ]
-        [ Control.view SelectRom Run Pause Step Reset model.control
+        [ Cpu.view model.cpu
         , Display.view model.display
-        , Cpu.view model.cpu
+        , Control.view SelectRom Run Pause Step Reset model.control
         ]

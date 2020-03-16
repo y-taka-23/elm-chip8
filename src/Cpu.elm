@@ -24,6 +24,8 @@ type Cpu
         , pc : Address
         , index : Address
         , registers : Registers
+        , sp : Nibble
+        , stack : Stack
         , delayTimer : Word
         , soundTimer : Word
         }
@@ -45,6 +47,15 @@ read (Register x) (Registers regs) =
 write : Register -> Word -> Registers -> Registers
 write (Register x) w (Registers regs) =
     Registers <| Dict.insert x w regs
+
+
+type Stack
+    = Stack (Dict Int Address)
+
+
+ith : Nibble -> Stack -> Address
+ith (Nibble i) (Stack stack) =
+    Maybe.withDefault (Tuple.second Memory.init) <| Dict.get i stack
 
 
 type Instruction
@@ -91,6 +102,8 @@ init =
         , pc = Tuple.second Memory.init
         , index = Tuple.second Memory.init
         , registers = Registers Dict.empty
+        , sp = Nibble 0
+        , stack = Stack Dict.empty
         , delayTimer = Word.undefined
         , soundTimer = Word.undefined
         }
@@ -338,33 +351,48 @@ jump addr (Cpu cpu) =
 view : Cpu -> Html msg
 view (Cpu cpu) =
     div [ id "cpu", class "pane" ]
-        [ div [ class "raw" ]
-            [ stretchCell "Step Count" <| text <| String.fromInt cpu.step ]
+        [ div [ id "step", class "column" ]
+            [ stretchCell "Step Count" <| Memory.viewAddress cpu.pc ]
         , div [ class "raw" ]
-            [ stretchCell "PC" <| Memory.viewAddress cpu.pc
-            , stretchCell "I" <| Memory.viewAddress cpu.index
-            , stretchCell "DT" <| Word.view cpu.delayTimer
-            , stretchCell "ST" <| Word.view cpu.soundTimer
-            ]
-        , div [ class "raw" ]
-            [ unitCell "V0" (Register 0x00) cpu.registers
-            , unitCell "V1" (Register 0x01) cpu.registers
-            , unitCell "V2" (Register 0x02) cpu.registers
-            , unitCell "V3" (Register 0x03) cpu.registers
-            , unitCell "V4" (Register 0x04) cpu.registers
-            , unitCell "V5" (Register 0x05) cpu.registers
-            , unitCell "V6" (Register 0x06) cpu.registers
-            , unitCell "V7" (Register 0x07) cpu.registers
-            ]
-        , div [ class "raw" ]
-            [ unitCell "V8" (Register 0x08) cpu.registers
-            , unitCell "V9" (Register 0x09) cpu.registers
-            , unitCell "VA" (Register 0x0A) cpu.registers
-            , unitCell "VB" (Register 0x0B) cpu.registers
-            , unitCell "VC" (Register 0x0C) cpu.registers
-            , unitCell "VD" (Register 0x0D) cpu.registers
-            , unitCell "VE" (Register 0x0E) cpu.registers
-            , unitCell "VF" (Register 0x0F) cpu.registers
+            [ div [ id "register", class "column" ]
+                [ div [ class "raw" ]
+                    [ stretchCell "PC" <| Memory.viewAddress cpu.pc
+                    , stretchCell "I" <| Memory.viewAddress cpu.index
+                    ]
+                , div [ class "raw" ]
+                    [ stretchCell "DT" <| Word.view cpu.delayTimer
+                    , stretchCell "ST" <| Word.view cpu.soundTimer
+                    ]
+                , div [ class "raw" ]
+                    [ unitCell "V0" (Register 0x00) cpu.registers
+                    , unitCell "V1" (Register 0x01) cpu.registers
+                    , unitCell "V2" (Register 0x02) cpu.registers
+                    , unitCell "V3" (Register 0x03) cpu.registers
+                    ]
+                , div [ class "raw" ]
+                    [ unitCell "V4" (Register 0x04) cpu.registers
+                    , unitCell "V5" (Register 0x05) cpu.registers
+                    , unitCell "V6" (Register 0x06) cpu.registers
+                    , unitCell "V7" (Register 0x07) cpu.registers
+                    ]
+                , div [ class "raw" ]
+                    [ unitCell "V8" (Register 0x08) cpu.registers
+                    , unitCell "V9" (Register 0x09) cpu.registers
+                    , unitCell "VA" (Register 0x0A) cpu.registers
+                    , unitCell "VB" (Register 0x0B) cpu.registers
+                    ]
+                , div [ class "raw" ]
+                    [ unitCell "VC" (Register 0x0C) cpu.registers
+                    , unitCell "VD" (Register 0x0D) cpu.registers
+                    , unitCell "VE" (Register 0x0E) cpu.registers
+                    , unitCell "VF" (Register 0x0F) cpu.registers
+                    ]
+                ]
+            , div [ id "stack", class "column" ] <|
+                stackPointer cpu.sp
+                    :: (List.map (\i -> stackSlot (Nibble i) cpu.stack) <|
+                            List.range 0 0x0F
+                       )
             ]
         ]
 
@@ -383,3 +411,20 @@ unitCell label reg regs =
     in
     div [ class "cell" ]
         [ div [] [ text label ], div [] [ val ] ]
+
+
+stackPointer : Nibble -> Html msg
+stackPointer (Nibble i) =
+    div [ class "raw" ]
+        [ div [ class "cell" ] [ text "SP" ]
+        , div [ class "cell" ] [ text <| String.fromInt i ]
+        ]
+
+
+stackSlot : Nibble -> Stack -> Html msg
+stackSlot (Nibble i) stack =
+    div [ class "raw" ]
+        [ div [ class "cell" ] [ text <| "Depth " ++ String.fromInt i ]
+        , div [ class "cell" ]
+            [ Memory.viewAddress <| ith (Nibble i) stack ]
+        ]

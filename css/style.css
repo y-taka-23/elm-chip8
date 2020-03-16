@@ -52,26 +52,49 @@ body {
 
 #cpu .raw {
     display: flex;
-    flex-direction: row;
 }
 
-#cpu .raw:not(:last-child) {
+#cpu .cell {
+    text-align: right;
+}
+
+#cpu #step {
+    border: solid 1px white;
+    padding: 5px;
     margin-bottom: 5px;
 }
 
-#cpu .raw .cell {
-    border: 1px solid white;
-    width: 3rem;
-    padding: 5px;
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-}
-
-#cpu .raw .cell:not(:last-child) {
+#cpu #register {
     margin-right: 5px;
 }
 
-#cpu .raw .cell.stretch {
+#cpu #register .raw:not(:last-child) {
+    margin-bottom: 5px;
+}
+
+#cpu #register .cell {
+    width: 3rem;
+    padding: 5px;
+    border: solid 1px white;
+}
+
+#cpu #register .cell:not(:last-child) {
+   margin-right: 5px;
+}
+
+#cpu #register .cell.stretch {
     width: 100%;
+}
+
+#cpu #stack {
+    border: solid 1px white;
+    padding-right: 5px;
+}
+
+#cpu #stack .cell {
+    width: 5rem;
+}
+
+#cpu #stack .raw {
+    margin: 0.5rem 0 0.5rem 0;
 }
