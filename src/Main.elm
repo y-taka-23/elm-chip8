@@ -75,7 +75,11 @@ update msg model =
                     ( model, Cmd.none )
 
                 Just mem ->
-                    ( { model | memory = mem }, Cmd.none )
+                    let
+                        initModel =
+                            Tuple.first <| init ()
+                    in
+                    ( { initModel | memory = mem, rom = model.rom }, Cmd.none )
 
         Run ->
             ( { model | control = Control.run model.control }
