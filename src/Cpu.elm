@@ -1,6 +1,7 @@
 module Cpu exposing
     ( Cpu
     , Register
+    , continue
     , decode
     , execute
     , executeRand
@@ -15,7 +16,9 @@ import Html exposing (Html, div, text)
 import Html.Attributes exposing (class, id)
 import Memory exposing (Address, Memory)
 import Memory.Word as Word exposing (Nibble(..), Word)
+import Process
 import Random
+import Task
 
 
 type Cpu
@@ -229,29 +232,30 @@ decode ( w1, w2 ) =
 
 execute :
     (Register -> Word -> Word -> msg)
+    -> Cmd msg
     -> ( Cpu, Memory, Display )
     -> Instruction
     -> ( ( Cpu, Memory, Display ), Cmd msg )
-execute onRand ( cpu, mem, disp ) inst =
+execute onRand cont ( cpu, mem, disp ) inst =
     case inst of
         Jump addr ->
-            ( ( jump addr cpu, mem, disp ), Cmd.none )
+            ( ( jump addr cpu, mem, disp ), cont )
 
         SkipEq reg cond ->
             if getRegister reg cpu == cond then
-                ( ( skip cpu, mem, disp ), Cmd.none )
+                ( ( skip cpu, mem, disp ), cont )
 
             else
-                ( ( next cpu, mem, disp ), Cmd.none )
+                ( ( next cpu, mem, disp ), cont )
 
         Load reg w ->
-            ( ( next <| setRegister reg w cpu, mem, disp ), Cmd.none )
+            ( ( next <| setRegister reg w cpu, mem, disp ), cont )
 
         Add reg w ->
-            ( ( next <| addRegister reg w cpu, mem, disp ), Cmd.none )
+            ( ( next <| addRegister reg w cpu, mem, disp ), cont )
 
         LoadIdx addr ->
-            ( ( next <| setIndex addr cpu, mem, disp ), Cmd.none )
+            ( ( next <| setIndex addr cpu, mem, disp ), cont )
 
         Rand reg mask ->
             ( ( cpu, mem, disp )
@@ -263,10 +267,19 @@ execute onRand ( cpu, mem, disp ) inst =
                 ( newCpu, newDisp ) =
                     drawSprite regX regY size ( cpu, mem, disp )
             in
-            ( ( next newCpu, mem, newDisp ), Cmd.none )
+            ( ( next newCpu, mem, newDisp ), cont )
 
         _ ->
             ( ( cpu, mem, disp ), Cmd.none )
+
+
+continue : Bool -> msg -> Cmd msg
+continue isRunning msg =
+    if isRunning then
+        Process.sleep 0 |> Task.perform (always msg)
+
+    else
+        Cmd.none
 
 
 executeRand : Register -> Word -> Word -> Cpu -> Cpu

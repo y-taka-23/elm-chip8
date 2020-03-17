@@ -78,7 +78,9 @@ update msg model =
                     ( { model | memory = mem }, Cmd.none )
 
         Run ->
-            ( { model | control = Control.run model.control }, Cmd.none )
+            ( { model | control = Control.run model.control }
+            , Cpu.continue True Step
+            )
 
         Pause ->
             ( { model | control = Control.pause model.control }, Cmd.none )
@@ -86,17 +88,15 @@ update msg model =
         Step ->
             let
                 ( ( newCpu, newMem, newDisp ), cmd ) =
-                    Cpu.execute StepRand
+                    Cpu.execute
+                        StepRand
+                        (Cpu.continue (Control.isRunning model.control) Step)
                         ( model.cpu, model.memory, model.display )
                     <|
                         Cpu.decode <|
                             Cpu.fetch model.cpu model.memory
             in
-            ( { model
-                | memory = newMem
-                , cpu = newCpu
-                , display = newDisp
-              }
+            ( { model | memory = newMem, cpu = newCpu, display = newDisp }
             , cmd
             )
 
@@ -105,7 +105,9 @@ update msg model =
                 newCpu =
                     Cpu.executeRand reg mask rand model.cpu
             in
-            ( { model | cpu = newCpu }, Cmd.none )
+            ( { model | cpu = newCpu }
+            , Cpu.continue (Control.isRunning model.control) Step
+            )
 
         Reset ->
             let
@@ -121,12 +123,8 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    if Control.isRunning model.control then
-        Browser.onAnimationFrame <| always Step
-
-    else
-        Sub.none
+subscriptions _ =
+    Sub.none
 
 
 view : Model -> Html Msg
