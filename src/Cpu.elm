@@ -352,7 +352,7 @@ view : Cpu -> Html msg
 view (Cpu cpu) =
     div [ id "cpu", class "pane" ]
         [ div [ id "step", class "column" ]
-            [ stretchCell "Step Count" <| Memory.viewAddress cpu.pc ]
+            [ stretchCell "Step Count" <| text <| String.fromInt cpu.step ]
         , div [ class "raw" ]
             [ div [ id "register", class "column" ]
                 [ div [ class "raw" ]
