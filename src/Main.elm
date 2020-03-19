@@ -10,8 +10,9 @@ import File exposing (File)
 import File.Select as Select
 import Html exposing (Html, div)
 import Html.Attributes exposing (id)
+import Keyboard
 import Memory exposing (Memory)
-import Memory.Word exposing (Word)
+import Memory.Word exposing (Nibble, Word)
 import Task
 
 
@@ -33,6 +34,7 @@ type Msg
     | Pause
     | Step
     | StepRand Register Word Word
+    | PressKey Nibble
     | Reset
 
 
@@ -113,6 +115,9 @@ update msg model =
             , Cpu.continue (Control.isRunning model.control) Step
             )
 
+        PressKey key ->
+            ( model, Cmd.none )
+
         Reset ->
             let
                 initModel =
@@ -135,6 +140,7 @@ view : Model -> Html Msg
 view model =
     div [ id "main-container" ]
         [ Cpu.view model.cpu
+        , Keyboard.view PressKey
         , Display.view model.display
         , Control.view SelectRom Run Pause Step Reset model.control
         ]
