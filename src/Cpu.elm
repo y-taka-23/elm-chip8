@@ -4,6 +4,7 @@ module Cpu exposing
     , continue
     , decode
     , execute
+    , executeKey
     , executeRand
     , fetch
     , init
@@ -31,6 +32,7 @@ type Cpu
         , stack : Stack
         , delayTimer : Word
         , soundTimer : Word
+        , waitingKey : Maybe Register
         }
 
 
@@ -59,6 +61,18 @@ type Stack
 ith : Nibble -> Stack -> Address
 ith (Nibble i) (Stack stack) =
     Maybe.withDefault (Tuple.second Memory.init) <| Dict.get i stack
+
+
+push : Address -> ( Nibble, Stack ) -> ( Nibble, Stack )
+push addr ( Nibble sp, Stack stack ) =
+    ( Nibble <| sp + 1, Stack <| Dict.insert sp addr stack )
+
+
+pop : Nibble -> Stack -> ( Nibble, Address )
+pop (Nibble sp) (Stack stack) =
+    ( Nibble <| sp - 1
+    , Maybe.withDefault (Tuple.second Memory.init) <| Dict.get (sp - 1) stack
+    )
 
 
 type Instruction
@@ -109,6 +123,7 @@ init =
         , stack = Stack Dict.empty
         , delayTimer = Word.undefined
         , soundTimer = Word.undefined
+        , waitingKey = Nothing
         }
 
 
@@ -238,11 +253,24 @@ execute :
     -> ( ( Cpu, Memory, Display ), Cmd msg )
 execute onRand cont ( cpu, mem, disp ) inst =
     case inst of
+        Return ->
+            ( ( return cpu, mem, disp ), cont )
+
         Jump addr ->
             ( ( jump addr cpu, mem, disp ), cont )
 
+        Call addr ->
+            ( ( call addr cpu, mem, disp ), cont )
+
         SkipEq reg cond ->
             if getRegister reg cpu == cond then
+                ( ( skip cpu, mem, disp ), cont )
+
+            else
+                ( ( next cpu, mem, disp ), cont )
+
+        SkipNeq reg cond ->
+            if getRegister reg cpu /= cond then
                 ( ( skip cpu, mem, disp ), cont )
 
             else
@@ -253,6 +281,15 @@ execute onRand cont ( cpu, mem, disp ) inst =
 
         Add reg w ->
             ( ( next <| addRegister reg w cpu, mem, disp ), cont )
+
+        Move regX regY ->
+            ( ( next <| moveRegister regX regY cpu, mem, disp ), cont )
+
+        And regX regY ->
+            ( ( next <| andRegister regX regY cpu, mem, disp ), cont )
+
+        SubReg regX regY ->
+            ( ( next <| subRegister regX regY cpu, mem, disp ), cont )
 
         LoadIdx addr ->
             ( ( next <| setIndex addr cpu, mem, disp ), cont )
@@ -268,6 +305,18 @@ execute onRand cont ( cpu, mem, disp ) inst =
                     drawSprite regX regY size ( cpu, mem, disp )
             in
             ( ( next newCpu, mem, newDisp ), cont )
+
+        KeyDelay reg ->
+            ( ( waitKey reg cpu, mem, disp ), Cmd.none )
+
+        AddIdx reg ->
+            ( ( next <| addIndex reg cpu, mem, disp ), cont )
+
+        Store reg ->
+            ( ( next cpu, dumpRegisters reg ( cpu, mem ), disp ), cont )
+
+        Read reg ->
+            ( ( next <| loadRegisters reg ( cpu, mem ), mem, disp ), cont )
 
         _ ->
             ( ( cpu, mem, disp ), Cmd.none )
@@ -287,6 +336,15 @@ executeRand reg mask rand cpu =
     next <| setRegister reg (Word.and mask rand) cpu
 
 
+executeKey : Nibble -> Cpu -> Cpu
+executeKey key cpu =
+    let
+        ( newCpu, reg ) =
+            unwaitKey cpu
+    in
+    next <| setRegister reg (Word.fromNibble key) newCpu
+
+
 setIndex : Address -> Cpu -> Cpu
 setIndex addr (Cpu cpu) =
     Cpu { cpu | index = addr }
@@ -295,6 +353,18 @@ setIndex addr (Cpu cpu) =
 getIndex : Cpu -> Address
 getIndex (Cpu cpu) =
     cpu.index
+
+
+addIndex : Register -> Cpu -> Cpu
+addIndex reg cpu =
+    let
+        ( addr, x ) =
+            ( getIndex cpu, getRegister reg cpu )
+
+        ( newIdx, carry ) =
+            Memory.add addr <| Memory.fromWord x
+    in
+    setRegister (Register 0x0F) (Word.fromFlag carry) <| setIndex newIdx cpu
 
 
 setRegister : Register -> Word -> Cpu -> Cpu
@@ -307,6 +377,11 @@ getRegister reg (Cpu cpu) =
     read reg cpu.registers
 
 
+moveRegister : Register -> Register -> Cpu -> Cpu
+moveRegister regX regY cpu =
+    setRegister regX (getRegister regY cpu) cpu
+
+
 addRegister : Register -> Word -> Cpu -> Cpu
 addRegister reg w cpu =
     let
@@ -316,9 +391,40 @@ addRegister reg w cpu =
     setRegister reg sum cpu
 
 
+subRegister : Register -> Register -> Cpu -> Cpu
+subRegister regX regY cpu =
+    let
+        ( diff, notBorrow ) =
+            Word.sub (getRegister regX cpu) (getRegister regY cpu)
+    in
+    setRegister (Register 0x0F) (Word.fromFlag notBorrow) <|
+        setRegister regX diff cpu
+
+
+andRegister : Register -> Register -> Cpu -> Cpu
+andRegister regX regY cpu =
+    let
+        cap =
+            Word.and (getRegister regX cpu) (getRegister regY cpu)
+    in
+    setRegister regX cap cpu
+
+
 setFlag : Bool -> Cpu -> Cpu
 setFlag flag cpu =
     setRegister (Register 0x0F) (Word.fromFlag flag) cpu
+
+
+waitKey : Register -> Cpu -> Cpu
+waitKey reg (Cpu cpu) =
+    Cpu { cpu | waitingKey = Just reg }
+
+
+unwaitKey : Cpu -> ( Cpu, Register )
+unwaitKey (Cpu cpu) =
+    ( Cpu { cpu | waitingKey = Nothing }
+    , Maybe.withDefault (Register 0x00) cpu.waitingKey
+    )
 
 
 drawSprite :
@@ -341,6 +447,27 @@ drawSprite regX regY size ( cpu, mem, disp ) =
     ( setFlag coll cpu, newDisp )
 
 
+dumpRegisters : Register -> ( Cpu, Memory ) -> Memory
+dumpRegisters (Register reg) ( cpu, mem ) =
+    let
+        words =
+            List.map (\r -> getRegister r cpu) <|
+                List.map Register <|
+                    List.range 0x00 reg
+    in
+    Memory.writeChunk (getIndex cpu) words mem
+
+
+loadRegisters : Register -> ( Cpu, Memory ) -> Cpu
+loadRegisters (Register reg) ( cpu, mem ) =
+    let
+        words =
+            Memory.readChunk (Nibble (reg + 1)) (getIndex cpu) mem
+    in
+    List.foldl (\( r, w ) c -> setRegister r w c) cpu <|
+        List.indexedMap (\i w -> ( Register i, w )) words
+
+
 nextPc : Address -> Address
 nextPc =
     Memory.next << Memory.next
@@ -359,6 +486,24 @@ skip (Cpu cpu) =
 jump : Address -> Cpu -> Cpu
 jump addr (Cpu cpu) =
     Cpu { cpu | step = cpu.step + 1, pc = addr }
+
+
+call : Address -> Cpu -> Cpu
+call addr (Cpu cpu) =
+    let
+        ( newSp, newStack ) =
+            push cpu.pc ( cpu.sp, cpu.stack )
+    in
+    Cpu { cpu | pc = addr, sp = newSp, stack = newStack }
+
+
+return : Cpu -> Cpu
+return (Cpu cpu) =
+    let
+        ( newSp, newPc ) =
+            pop cpu.sp cpu.stack
+    in
+    next <| Cpu { cpu | pc = newPc, sp = newSp }
 
 
 view : Cpu -> Html msg

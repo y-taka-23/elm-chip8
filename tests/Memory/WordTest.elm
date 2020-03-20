@@ -3,7 +3,7 @@ module Memory.WordTest exposing (suite)
 import Expect
 import Fuzz
 import List.Extra as List
-import Memory.Word as Word
+import Memory.Word as Word exposing (Nibble(..))
 import Test exposing (Test, describe, fuzz, fuzz2, fuzz3, test)
 
 
@@ -28,6 +28,36 @@ suite =
                 \w1 w2 ->
                     Word.add w1 w2
                         |> Expect.equal (Word.add w2 w1)
+            ]
+        , describe "sub"
+            [ fuzz
+                Word.fuzzer
+                "should be the left inverse of add"
+              <|
+                \w ->
+                    Word.add (Tuple.first <| Word.sub Word.undefined w) w
+                        |> Expect.equal Word.undefined
+            , fuzz
+                Word.fuzzer
+                "should be the right inverse of add"
+              <|
+                \w ->
+                    Word.add w (Tuple.first <| Word.sub Word.undefined w)
+                        |> Expect.equal Word.undefined
+            , fuzz2
+                Word.fuzzer
+                Word.fuzzer
+                "should be anti-symmetric"
+              <|
+                \w1 w2 ->
+                    if w1 /= w2 then
+                        Tuple.second (Word.sub w1 w2)
+                            |> Expect.notEqual (Tuple.second <| Word.sub w2 w1)
+
+                    else
+                        Tuple.second (Word.sub w1 w2)
+                            |> Expect.false
+                                "The NOT borrow flag should be False"
             ]
         , describe "and"
             [ fuzz3
@@ -120,6 +150,28 @@ suite =
 
                     else
                         Expect.pass
+            ]
+        , describe "fromNibble"
+            [ fuzz2
+                Word.fuzzNibble
+                Word.fuzzNibble
+                "should not degenerate"
+              <|
+                \n1 n2 ->
+                    if n1 /= n2 then
+                        Word.fromNibble n1
+                            |> Expect.notEqual (Word.fromNibble n2)
+
+                    else
+                        Expect.pass
+            , fuzz
+                Word.fuzzNibble
+                "should be the inverse of toNibbles"
+              <|
+                \n ->
+                    Word.fromNibble n
+                        |> Word.toNibbles
+                        |> Expect.equal ( Nibble 0x00, n )
             ]
         , describe "toSprite"
             [ fuzz2

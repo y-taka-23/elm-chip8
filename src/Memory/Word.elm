@@ -6,8 +6,11 @@ module Memory.Word exposing
     , decoder
     , font
     , fromFlag
+    , fromNibble
+    , fuzzNibble
     , fuzzer
     , random
+    , sub
     , toCoordinate
     , toNibbles
     , toSprite
@@ -26,6 +29,11 @@ type Nibble
     = Nibble Int
 
 
+fuzzNibble : Fuzzer Nibble
+fuzzNibble =
+    Fuzz.map Nibble <| Fuzz.intRange 0x00 0x0F
+
+
 type Word
     = Word Int
 
@@ -33,6 +41,11 @@ type Word
 undefined : Word
 undefined =
     Word 0x00
+
+
+fromNibble : Nibble -> Word
+fromNibble (Nibble x) =
+    Word x
 
 
 font : List Word
@@ -104,6 +117,11 @@ toSprite ws =
 add : Word -> Word -> Word
 add (Word x1) (Word x2) =
     Word <| modBy 0x0100 <| x1 + x2
+
+
+sub : Word -> Word -> ( Word, Bool )
+sub (Word x1) (Word x2) =
+    ( Word <| modBy 0x0100 <| x1 - x2, x1 > x2 )
 
 
 and : Word -> Word -> Word

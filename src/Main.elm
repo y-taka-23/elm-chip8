@@ -107,16 +107,14 @@ update msg model =
             )
 
         StepRand reg mask rand ->
-            let
-                newCpu =
-                    Cpu.executeRand reg mask rand model.cpu
-            in
-            ( { model | cpu = newCpu }
+            ( { model | cpu = Cpu.executeRand reg mask rand model.cpu }
             , Cpu.continue (Control.isRunning model.control) Step
             )
 
         PressKey key ->
-            ( model, Cmd.none )
+            ( { model | cpu = Cpu.executeKey key model.cpu }
+            , Cpu.continue (Control.isRunning model.control) Step
+            )
 
         Reset ->
             let

@@ -1,18 +1,24 @@
 module Memory exposing
     ( Address
     , Memory
+    , add
     , fromNibble
+    , fromWord
+    , fuzzer
     , init
     , loadRom
     , next
     , read
+    , readChunk
     , readSprite
     , viewAddress
+    , writeChunk
     )
 
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode exposing (Decoder, Step(..))
 import Dict exposing (Dict)
+import Fuzz exposing (Fuzzer)
 import Html exposing (Html, text)
 import Memory.Word as Word exposing (Nibble(..), Word)
 
@@ -25,6 +31,11 @@ type Address
     = Address Int
 
 
+fuzzer : Fuzzer Address
+fuzzer =
+    Fuzz.map Address <| Fuzz.intRange 0x00 0x0FFF
+
+
 init : ( Memory, Address )
 init =
     ( Memory <| Dict.fromList <| List.indexedMap Tuple.pair Word.font
@@ -35,6 +46,22 @@ init =
 fromNibble : Nibble -> Nibble -> Nibble -> Address
 fromNibble (Nibble x1) (Nibble x2) (Nibble x3) =
     Address <| (16 * 16 * x1) + (16 * x2) + x3
+
+
+fromWord : Word -> Address
+fromWord w =
+    let
+        ( n1, n2 ) =
+            Word.toNibbles w
+    in
+    fromNibble (Nibble 0x00) n1 n2
+
+
+add : Address -> Address -> ( Address, Bool )
+add (Address addr1) (Address addr2) =
+    ( Address <| modBy 0x1000 <| addr1 + addr2
+    , addr1 + addr2 >= 0x1000
+    )
 
 
 next : Address -> Address
@@ -57,6 +84,17 @@ readChunk (Nibble size) (Address origin) mem =
     List.map (\a -> read a mem) <|
         List.map Address <|
             List.range origin (origin + size - 1)
+
+
+write : Address -> Word -> Memory -> Memory
+write (Address addr) w (Memory mem) =
+    Memory <| Dict.insert addr w mem
+
+
+writeChunk : Address -> List Word -> Memory -> Memory
+writeChunk (Address origin) words mem =
+    List.foldl (\( a, w ) m -> write a w m) mem <|
+        List.indexedMap (\i w -> ( Address (origin + i), w )) words
 
 
 loadRom : Bytes -> Maybe Memory
