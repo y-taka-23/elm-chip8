@@ -318,6 +318,9 @@ execute onRand cont ( cpu, mem, disp ) inst =
         AddIdx reg ->
             ( ( next <| addIndex reg cpu, mem, disp ), cont )
 
+        LoadSprite reg ->
+            ( ( next <| pointFont reg cpu, mem, disp ), cont )
+
         Bcd reg ->
             ( ( next cpu, dumpBcd reg ( cpu, mem ), disp ), cont )
 
@@ -444,6 +447,15 @@ unwaitKey (Cpu cpu) =
     ( Cpu { cpu | waitingKey = Nothing }
     , Maybe.withDefault (Register 0x00) cpu.waitingKey
     )
+
+
+pointFont : Register -> Cpu -> Cpu
+pointFont reg cpu =
+    let
+        w =
+            getRegister reg cpu
+    in
+    setIndex (Memory.cueFont w) cpu
 
 
 drawSprite :

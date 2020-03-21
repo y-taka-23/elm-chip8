@@ -2,6 +2,7 @@ module Memory exposing
     ( Address
     , Memory
     , add
+    , cueFont
     , fromNibble
     , fromWord
     , fuzzer
@@ -72,6 +73,11 @@ next (Address addr) =
 read : Address -> Memory -> Word
 read (Address addr) (Memory mem) =
     Maybe.withDefault Word.undefined <| Dict.get addr mem
+
+
+cueFont : Word -> Address
+cueFont =
+    Address << Word.fontIndex
 
 
 readSprite : Nibble -> Address -> Memory -> List (List Bool)

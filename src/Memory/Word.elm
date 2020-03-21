@@ -5,6 +5,7 @@ module Memory.Word exposing
     , and
     , decoder
     , font
+    , fontIndex
     , fromFlag
     , fromNibble
     , fuzzNibble
@@ -69,6 +70,15 @@ font =
         , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x80, Word 0xF0 ]
         , [ Word 0xF0, Word 0x80, Word 0xF0, Word 0x80, Word 0x80 ]
         ]
+
+
+fontIndex : Word -> Int
+fontIndex w =
+    let
+        ( _, Nibble n ) =
+            toNibbles w
+    in
+    5 * n
 
 
 random : Generator Word
