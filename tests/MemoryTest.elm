@@ -44,12 +44,9 @@ suite =
                     let
                         initMemory =
                             Tuple.first Memory.init
-
-                        size =
-                            Nibble <| List.length ws
                     in
                     Memory.writeChunk addr ws initMemory
-                        |> Memory.readChunk size addr
+                        |> Memory.readChunk (Nibble <| List.length ws) addr
                         |> Expect.equal ws
             ]
         ]

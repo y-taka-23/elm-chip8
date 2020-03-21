@@ -3,7 +3,7 @@ module Memory.WordTest exposing (suite)
 import Expect
 import Fuzz
 import List.Extra as List
-import Memory.Word as Word exposing (Nibble(..))
+import Memory.Word as Word exposing (Nibble(..), Word)
 import Test exposing (Test, describe, fuzz, fuzz2, fuzz3, test)
 
 
@@ -15,11 +15,11 @@ suite =
                 Word.fuzzer
                 Word.fuzzer
                 Word.fuzzer
-                "should be accosiative"
+                "should be accosiative up to the carry flag"
               <|
                 \w1 w2 w3 ->
-                    Word.add w1 (Word.add w2 w3)
-                        |> Expect.equal (Word.add (Word.add w1 w2) w3)
+                    addUpToCarry w1 (addUpToCarry w2 w3)
+                        |> Expect.equal (addUpToCarry (addUpToCarry w1 w2) w3)
             , fuzz2
                 Word.fuzzer
                 Word.fuzzer
@@ -32,17 +32,17 @@ suite =
         , describe "sub"
             [ fuzz
                 Word.fuzzer
-                "should be the left inverse of add"
+                "should be the left inverse of add up to the flags"
               <|
                 \w ->
-                    Word.add (Tuple.first <| Word.sub Word.undefined w) w
+                    addUpToCarry (subUpToBorrow Word.undefined w) w
                         |> Expect.equal Word.undefined
             , fuzz
                 Word.fuzzer
                 "should be the right inverse of add"
               <|
                 \w ->
-                    Word.add w (Tuple.first <| Word.sub Word.undefined w)
+                    addUpToCarry w (subUpToBorrow Word.undefined w)
                         |> Expect.equal Word.undefined
             , fuzz2
                 Word.fuzzer
@@ -92,14 +92,14 @@ suite =
               <|
                 \w ->
                     Word.add Word.undefined w
-                        |> Expect.equal w
+                        |> Expect.equal ( w, False )
             , fuzz
                 Word.fuzzer
                 "should be the right unit of add"
               <|
                 \w ->
                     Word.add w Word.undefined
-                        |> Expect.equal w
+                        |> Expect.equal ( w, False )
             , fuzz
                 Word.fuzzer
                 "should be the left zero of and"
@@ -225,4 +225,28 @@ suite =
                     convertThenPick
                         |> Expect.equal pickThenConvert
             ]
+        , describe "toBcd"
+            [ fuzz2
+                Word.fuzzer
+                Word.fuzzer
+                "should not degenerate"
+              <|
+                \w1 w2 ->
+                    if w1 /= w2 then
+                        Word.toBcd w1
+                            |> Expect.notEqual (Word.toBcd w2)
+
+                    else
+                        Expect.pass
+            ]
         ]
+
+
+addUpToCarry : Word -> Word -> Word
+addUpToCarry w1 w2 =
+    Tuple.first <| Word.add w1 w2
+
+
+subUpToBorrow : Word -> Word -> Word
+subUpToBorrow w1 w2 =
+    Tuple.first <| Word.sub w1 w2

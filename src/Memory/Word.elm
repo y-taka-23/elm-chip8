@@ -11,6 +11,7 @@ module Memory.Word exposing
     , fuzzer
     , random
     , sub
+    , toBcd
     , toCoordinate
     , toNibbles
     , toSprite
@@ -114,9 +115,14 @@ toSprite ws =
     List.map toLine ws
 
 
-add : Word -> Word -> Word
+toBcd : Word -> ( Word, Word, Word )
+toBcd (Word w) =
+    ( Word <| w // 100, Word <| modBy 10 <| w // 10, Word <| modBy 10 w )
+
+
+add : Word -> Word -> ( Word, Bool )
 add (Word x1) (Word x2) =
-    Word <| modBy 0x0100 <| x1 + x2
+    ( Word <| modBy 0x0100 <| x1 + x2, x1 + x2 >= 0x0100 )
 
 
 sub : Word -> Word -> ( Word, Bool )

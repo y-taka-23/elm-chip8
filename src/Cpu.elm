@@ -253,6 +253,9 @@ execute :
     -> ( ( Cpu, Memory, Display ), Cmd msg )
 execute onRand cont ( cpu, mem, disp ) inst =
     case inst of
+        Clear ->
+            ( ( next cpu, mem, Display.init ), cont )
+
         Return ->
             ( ( return cpu, mem, disp ), cont )
 
@@ -280,13 +283,16 @@ execute onRand cont ( cpu, mem, disp ) inst =
             ( ( next <| setRegister reg w cpu, mem, disp ), cont )
 
         Add reg w ->
-            ( ( next <| addRegister reg w cpu, mem, disp ), cont )
+            ( ( next <| accRegister reg w cpu, mem, disp ), cont )
 
         Move regX regY ->
             ( ( next <| moveRegister regX regY cpu, mem, disp ), cont )
 
         And regX regY ->
             ( ( next <| andRegister regX regY cpu, mem, disp ), cont )
+
+        AddReg regX regY ->
+            ( ( next <| addRegister regX regY cpu, mem, disp ), cont )
 
         SubReg regX regY ->
             ( ( next <| subRegister regX regY cpu, mem, disp ), cont )
@@ -311,6 +317,9 @@ execute onRand cont ( cpu, mem, disp ) inst =
 
         AddIdx reg ->
             ( ( next <| addIndex reg cpu, mem, disp ), cont )
+
+        Bcd reg ->
+            ( ( next cpu, dumpBcd reg ( cpu, mem ), disp ), cont )
 
         Store reg ->
             ( ( next cpu, dumpRegisters reg ( cpu, mem ), disp ), cont )
@@ -382,13 +391,23 @@ moveRegister regX regY cpu =
     setRegister regX (getRegister regY cpu) cpu
 
 
-addRegister : Register -> Word -> Cpu -> Cpu
-addRegister reg w cpu =
+accRegister : Register -> Word -> Cpu -> Cpu
+accRegister reg w cpu =
     let
         sum =
-            Word.add w <| getRegister reg cpu
+            Tuple.first <| Word.add w <| getRegister reg cpu
     in
     setRegister reg sum cpu
+
+
+addRegister : Register -> Register -> Cpu -> Cpu
+addRegister regX regY cpu =
+    let
+        ( sum, carry ) =
+            Word.add (getRegister regX cpu) (getRegister regY cpu)
+    in
+    setRegister (Register 0x0F) (Word.fromFlag carry) <|
+        setRegister regX sum cpu
 
 
 subRegister : Register -> Register -> Cpu -> Cpu
@@ -445,6 +464,15 @@ drawSprite regX regY size ( cpu, mem, disp ) =
             Display.draw (Word.toCoordinate x y) sprite disp
     in
     ( setFlag coll cpu, newDisp )
+
+
+dumpBcd : Register -> ( Cpu, Memory ) -> Memory
+dumpBcd reg ( cpu, mem ) =
+    let
+        ( w1, w2, w3 ) =
+            Word.toBcd <| getRegister reg cpu
+    in
+    Memory.writeChunk (getIndex cpu) [ w1, w2, w3 ] mem
 
 
 dumpRegisters : Register -> ( Cpu, Memory ) -> Memory
