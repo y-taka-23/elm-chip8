@@ -4,6 +4,7 @@ module Memory.Word exposing
     , add
     , and
     , decoder
+    , decr
     , font
     , fontIndex
     , fromFlag
@@ -128,6 +129,11 @@ toSprite ws =
 toBcd : Word -> ( Word, Word, Word )
 toBcd (Word w) =
     ( Word <| w // 100, Word <| modBy 10 <| w // 10, Word <| modBy 10 w )
+
+
+decr : Word -> Word
+decr (Word w) =
+    Word <| max (w - 1) 0
 
 
 add : Word -> Word -> ( Word, Bool )

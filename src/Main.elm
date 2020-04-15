@@ -35,6 +35,7 @@ type Msg
     | Step
     | StepRand Register Word Word
     | PressKey Nibble
+    | DecrTimers
     | Reset
 
 
@@ -116,6 +117,9 @@ update msg model =
             , Cpu.continue (Control.isRunning model.control) Step
             )
 
+        DecrTimers ->
+            ( { model | cpu = Cpu.decrTimers model.cpu }, Cmd.none )
+
         Reset ->
             let
                 initModel =
@@ -131,7 +135,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Browser.onAnimationFrame (always DecrTimers)
 
 
 view : Model -> Html Msg

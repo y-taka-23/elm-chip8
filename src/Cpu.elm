@@ -3,6 +3,7 @@ module Cpu exposing
     , Register
     , continue
     , decode
+    , decrTimers
     , execute
     , executeKey
     , executeRand
@@ -312,8 +313,14 @@ execute onRand cont ( cpu, mem, disp ) inst =
             in
             ( ( next newCpu, mem, newDisp ), cont )
 
+        MoveDelay reg ->
+            ( ( next <| moveDelayTimer reg cpu, mem, disp ), cont )
+
         KeyDelay reg ->
             ( ( waitKey reg cpu, mem, disp ), Cmd.none )
+
+        LoadDelay reg ->
+            ( ( next <| loadDelayTimer reg cpu, mem, disp ), cont )
 
         AddIdx reg ->
             ( ( next <| addIndex reg cpu, mem, disp ), cont )
@@ -506,6 +513,25 @@ loadRegisters (Register reg) ( cpu, mem ) =
     in
     List.foldl (\( r, w ) c -> setRegister r w c) cpu <|
         List.indexedMap (\i w -> ( Register i, w )) words
+
+
+moveDelayTimer : Register -> Cpu -> Cpu
+moveDelayTimer reg (Cpu cpu) =
+    setRegister reg cpu.delayTimer (Cpu cpu)
+
+
+loadDelayTimer : Register -> Cpu -> Cpu
+loadDelayTimer reg (Cpu cpu) =
+    Cpu { cpu | delayTimer = getRegister reg (Cpu cpu) }
+
+
+decrTimers : Cpu -> Cpu
+decrTimers (Cpu cpu) =
+    Cpu
+        { cpu
+            | delayTimer = Word.decr cpu.delayTimer
+            , soundTimer = Word.decr cpu.soundTimer
+        }
 
 
 nextPc : Address -> Address

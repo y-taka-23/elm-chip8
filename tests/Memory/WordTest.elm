@@ -88,6 +88,18 @@ suite =
         , describe "undefined"
             [ fuzz
                 Word.fuzzer
+                "should be the fixpoint of decr"
+              <|
+                \w ->
+                    if w == Word.undefined then
+                        Word.decr w
+                            |> Expect.equal w
+
+                    else
+                        Word.decr w
+                            |> Expect.notEqual w
+            , fuzz
+                Word.fuzzer
                 "should be the left unit of add"
               <|
                 \w ->
