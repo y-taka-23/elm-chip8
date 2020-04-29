@@ -113,9 +113,13 @@ update msg model =
             )
 
         PressKey key ->
-            ( { model | cpu = Cpu.executeKey key model.cpu }
-            , Cpu.continue (Control.isRunning model.control) Step
-            )
+            if Cpu.isWaiting model.cpu then
+                ( { model | cpu = Cpu.executeKey key model.cpu }
+                , Cpu.continue (Control.isRunning model.control) Step
+                )
+
+            else
+                ( model, Cmd.none )
 
         DecrTimers ->
             ( { model | cpu = Cpu.decrTimers model.cpu }, Cmd.none )

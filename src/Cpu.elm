@@ -9,6 +9,7 @@ module Cpu exposing
     , executeRand
     , fetch
     , init
+    , isWaiting
     , view
     )
 
@@ -16,6 +17,7 @@ import Dict exposing (Dict)
 import Display exposing (Display)
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class, id)
+import Maybe.Extra as Maybe
 import Memory exposing (Address, Memory)
 import Memory.Word as Word exposing (Nibble(..), Word)
 import Process
@@ -348,6 +350,11 @@ continue isRunning msg =
 
     else
         Cmd.none
+
+
+isWaiting : Cpu -> Bool
+isWaiting (Cpu cpu) =
+    Maybe.isJust cpu.waitingKey
 
 
 executeRand : Register -> Word -> Word -> Cpu -> Cpu
