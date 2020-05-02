@@ -10,6 +10,8 @@ module Cpu exposing
     , fetch
     , init
     , isWaiting
+    , setKey
+    , unsetKey
     , view
     )
 
@@ -22,6 +24,7 @@ import Memory exposing (Address, Memory)
 import Memory.Word as Word exposing (Nibble(..), Word)
 import Process
 import Random
+import Set exposing (Set)
 import Task
 
 
@@ -36,6 +39,7 @@ type Cpu
         , delayTimer : Word
         , soundTimer : Word
         , waitingKey : Maybe Register
+        , pressingKeys : Set Int
         }
 
 
@@ -127,6 +131,7 @@ init =
         , delayTimer = Word.undefined
         , soundTimer = Word.undefined
         , waitingKey = Nothing
+        , pressingKeys = Set.empty
         }
 
 
@@ -315,6 +320,13 @@ execute onRand cont ( cpu, mem, disp ) inst =
             in
             ( ( next newCpu, mem, newDisp ), cont )
 
+        SkipUp reg ->
+            if not <| isPressing reg cpu then
+                ( ( skip cpu, mem, disp ), cont )
+
+            else
+                ( ( next cpu, mem, disp ), cont )
+
         MoveDelay reg ->
             ( ( next <| moveDelayTimer reg cpu, mem, disp ), cont )
 
@@ -357,6 +369,15 @@ isWaiting (Cpu cpu) =
     Maybe.isJust cpu.waitingKey
 
 
+isPressing : Register -> Cpu -> Bool
+isPressing reg (Cpu cpu) =
+    let
+        ( _, Nibble n ) =
+            Word.toNibbles <| getRegister reg (Cpu cpu)
+    in
+    Set.member n cpu.pressingKeys
+
+
 executeRand : Register -> Word -> Word -> Cpu -> Cpu
 executeRand reg mask rand cpu =
     next <| setRegister reg (Word.and mask rand) cpu
@@ -369,6 +390,16 @@ executeKey key cpu =
             unwaitKey cpu
     in
     next <| setRegister reg (Word.fromNibble key) newCpu
+
+
+setKey : Nibble -> Cpu -> Cpu
+setKey (Nibble n) (Cpu cpu) =
+    Cpu { cpu | pressingKeys = Set.insert n cpu.pressingKeys }
+
+
+unsetKey : Nibble -> Cpu -> Cpu
+unsetKey (Nibble n) (Cpu cpu) =
+    Cpu { cpu | pressingKeys = Set.remove n cpu.pressingKeys }
 
 
 setIndex : Address -> Cpu -> Cpu

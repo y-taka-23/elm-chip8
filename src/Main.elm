@@ -35,6 +35,8 @@ type Msg
     | Step
     | StepRand Register Word Word
     | PressKey Nibble
+    | DownKey Nibble
+    | UpKey Nibble
     | DecrTimers
     | Reset
 
@@ -121,6 +123,12 @@ update msg model =
             else
                 ( model, Cmd.none )
 
+        DownKey key ->
+            ( { model | cpu = Cpu.setKey key model.cpu }, Cmd.none )
+
+        UpKey key ->
+            ( { model | cpu = Cpu.unsetKey key model.cpu }, Cmd.none )
+
         DecrTimers ->
             ( { model | cpu = Cpu.decrTimers model.cpu }, Cmd.none )
 
@@ -146,7 +154,7 @@ view : Model -> Html Msg
 view model =
     div [ id "main-container" ]
         [ Cpu.view model.cpu
-        , Keyboard.view PressKey
+        , Keyboard.view PressKey DownKey UpKey
         , Display.view model.display
         , Control.view SelectRom Run Pause Step Reset model.control
         ]
