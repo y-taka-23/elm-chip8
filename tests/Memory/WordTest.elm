@@ -85,6 +85,32 @@ suite =
                     Word.and w w
                         |> Expect.equal w
             ]
+        , describe "xor"
+            [ fuzz3
+                Word.fuzzer
+                Word.fuzzer
+                Word.fuzzer
+                "should be accosiative"
+              <|
+                \w1 w2 w3 ->
+                    Word.xor w1 (Word.xor w2 w3)
+                        |> Expect.equal (Word.xor (Word.xor w1 w2) w3)
+            , fuzz2
+                Word.fuzzer
+                Word.fuzzer
+                "should be commutative"
+              <|
+                \w1 w2 ->
+                    Word.xor w1 w2
+                        |> Expect.equal (Word.xor w2 w1)
+            , fuzz
+                Word.fuzzer
+                "should be anti-symmetric"
+              <|
+                \w ->
+                    Word.xor w w
+                        |> Expect.equal Word.undefined
+            ]
         , describe "undefined"
             [ fuzz
                 Word.fuzzer
@@ -126,6 +152,20 @@ suite =
                 \w ->
                     Word.and w Word.undefined
                         |> Expect.equal Word.undefined
+            , fuzz
+                Word.fuzzer
+                "should be the left unit of xor"
+              <|
+                \w ->
+                    Word.xor w Word.undefined
+                        |> Expect.equal w
+            , fuzz
+                Word.fuzzer
+                "should be the right unit of xor"
+              <|
+                \w ->
+                    Word.xor Word.undefined w
+                        |> Expect.equal w
             ]
         , describe "fromFlag"
             [ test

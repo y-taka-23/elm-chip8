@@ -19,6 +19,7 @@ module Memory.Word exposing
     , toSprite
     , undefined
     , view
+    , xor
     )
 
 import Bitwise
@@ -149,6 +150,11 @@ sub (Word x1) (Word x2) =
 and : Word -> Word -> Word
 and (Word x1) (Word x2) =
     Word <| Bitwise.and x1 x2
+
+
+xor : Word -> Word -> Word
+xor (Word x1) (Word x2) =
+    Word <| Bitwise.xor x1 x2
 
 
 view : Word -> Html msg

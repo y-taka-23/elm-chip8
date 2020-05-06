@@ -299,6 +299,9 @@ execute onRand cont ( cpu, mem, disp ) inst =
         And regX regY ->
             ( ( next <| andRegister regX regY cpu, mem, disp ), cont )
 
+        Xor regX regY ->
+            ( ( next <| xorRegister regX regY cpu, mem, disp ), cont )
+
         AddReg regX regY ->
             ( ( next <| addRegister regX regY cpu, mem, disp ), cont )
 
@@ -335,6 +338,10 @@ execute onRand cont ( cpu, mem, disp ) inst =
 
         LoadDelay reg ->
             ( ( next <| loadDelayTimer reg cpu, mem, disp ), cont )
+
+        LoadSound reg ->
+            -- TODO: Sound is not supported yet
+            ( ( next cpu, mem, disp ), cont )
 
         AddIdx reg ->
             ( ( next <| addIndex reg cpu, mem, disp ), cont )
@@ -475,6 +482,15 @@ andRegister regX regY cpu =
             Word.and (getRegister regX cpu) (getRegister regY cpu)
     in
     setRegister regX cap cpu
+
+
+xorRegister : Register -> Register -> Cpu -> Cpu
+xorRegister regX regY cpu =
+    let
+        xor =
+            Word.xor (getRegister regX cpu) (getRegister regY cpu)
+    in
+    setRegister regX xor cpu
 
 
 setFlag : Bool -> Cpu -> Cpu
