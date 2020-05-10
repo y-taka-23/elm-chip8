@@ -15,6 +15,7 @@ module Memory.Word exposing
     , sub
     , toBcd
     , toCoordinate
+    , toJson
     , toNibbles
     , toSprite
     , undefined
@@ -26,6 +27,7 @@ import Bitwise
 import Bytes.Decode as Decode exposing (Decoder)
 import Fuzz exposing (Fuzzer)
 import Html exposing (Html, text)
+import Json.Encode as E
 import Random exposing (Generator)
 
 
@@ -130,6 +132,11 @@ toSprite ws =
 toBcd : Word -> ( Word, Word, Word )
 toBcd (Word w) =
     ( Word <| w // 100, Word <| modBy 10 <| w // 10, Word <| modBy 10 w )
+
+
+toJson : Word -> E.Value
+toJson (Word w) =
+    E.int w
 
 
 decr : Word -> Word

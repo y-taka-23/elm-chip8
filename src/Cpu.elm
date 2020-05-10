@@ -11,6 +11,9 @@ module Cpu exposing
     , init
     , isWaiting
     , setKey
+    , signalSound
+    , startSound
+    , stopSound
     , unsetKey
     , view
     )
@@ -25,6 +28,7 @@ import Memory.Word as Word exposing (Nibble(..), Word)
 import Process
 import Random
 import Set exposing (Set)
+import Sound
 import Task
 
 
@@ -340,8 +344,7 @@ execute onRand cont ( cpu, mem, disp ) inst =
             ( ( next <| loadDelayTimer reg cpu, mem, disp ), cont )
 
         LoadSound reg ->
-            -- TODO: Sound is not supported yet
-            ( ( next cpu, mem, disp ), cont )
+            ( ( next <| loadSoundTimer reg cpu, mem, disp ), cont )
 
         AddIdx reg ->
             ( ( next <| addIndex reg cpu, mem, disp ), cont )
@@ -579,6 +582,11 @@ loadDelayTimer reg (Cpu cpu) =
     Cpu { cpu | delayTimer = getRegister reg (Cpu cpu) }
 
 
+loadSoundTimer : Register -> Cpu -> Cpu
+loadSoundTimer reg (Cpu cpu) =
+    Cpu { cpu | soundTimer = getRegister reg (Cpu cpu) }
+
+
 decrTimers : Cpu -> Cpu
 decrTimers (Cpu cpu) =
     Cpu
@@ -624,6 +632,21 @@ return (Cpu cpu) =
             pop cpu.sp cpu.stack
     in
     next <| Cpu { cpu | pc = newPc, sp = newSp }
+
+
+startSound : Cmd msg
+startSound =
+    Sound.start
+
+
+stopSound : Cmd msg
+stopSound =
+    Sound.stop
+
+
+signalSound : Cpu -> Cmd msg
+signalSound (Cpu cpu) =
+    Sound.emitTimer cpu.soundTimer
 
 
 view : Cpu -> Html msg

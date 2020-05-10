@@ -13,6 +13,7 @@ import Html.Attributes exposing (id)
 import Keyboard
 import Memory exposing (Memory)
 import Memory.Word exposing (Nibble, Word)
+import Sound
 import Task
 
 
@@ -88,11 +89,13 @@ update msg model =
 
         Run ->
             ( { model | control = Control.run model.control }
-            , Cpu.continue True Step
+            , Cmd.batch [ Cpu.continue True Step, Cpu.startSound ]
             )
 
         Pause ->
-            ( { model | control = Control.pause model.control }, Cmd.none )
+            ( { model | control = Control.pause model.control }
+            , Cpu.stopSound
+            )
 
         Step ->
             let
@@ -130,7 +133,9 @@ update msg model =
             ( { model | cpu = Cpu.unsetKey key model.cpu }, Cmd.none )
 
         DecrTimers ->
-            ( { model | cpu = Cpu.decrTimers model.cpu }, Cmd.none )
+            ( { model | cpu = Cpu.decrTimers model.cpu }
+            , Cpu.signalSound model.cpu
+            )
 
         Reset ->
             let
