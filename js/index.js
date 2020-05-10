@@ -10,7 +10,7 @@ const app = Elm.Main.init({
     node: document.querySelector('main')
 })
 
-app.ports.startWebAudio.subscribe(num => {
+app.ports.startWebAudio.subscribe(() => {
 
     oscillator = audioCtx.createOscillator()
     oscillator.type = "square"
@@ -23,7 +23,7 @@ app.ports.startWebAudio.subscribe(num => {
     oscillator.start()
 })
 
-app.ports.stopWebAudio.subscribe(num => {
+app.ports.stopWebAudio.subscribe(() => {
     oscillator.stop()
 })
 
