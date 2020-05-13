@@ -312,6 +312,13 @@ execute onRand cont ( cpu, mem, disp ) inst =
         SubReg regX regY ->
             ( ( next <| subRegister regX regY cpu, mem, disp ), cont )
 
+        SkipRegNeq regX regY ->
+            if getRegister regX cpu /= getRegister regY cpu then
+                ( ( skip cpu, mem, disp ), cont )
+
+            else
+                ( ( next cpu, mem, disp ), cont )
+
         LoadIdx addr ->
             ( ( next <| setIndex addr cpu, mem, disp ), cont )
 
@@ -326,6 +333,13 @@ execute onRand cont ( cpu, mem, disp ) inst =
                     drawSprite regX regY size ( cpu, mem, disp )
             in
             ( ( next newCpu, mem, newDisp ), cont )
+
+        SkipPress reg ->
+            if isPressing reg cpu then
+                ( ( skip cpu, mem, disp ), cont )
+
+            else
+                ( ( next cpu, mem, disp ), cont )
 
         SkipUp reg ->
             if not <| isPressing reg cpu then
